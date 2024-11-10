@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        @font-face {
+            font-family: 'SpecialCharSupportedFont';
+            src: url('https://fonts.cdnfonts.com/s/90843/NanumSquareNeo-bRg.woff') format('woff');
+            unicode-range: U+3200-32FF;
+        }
+
+        .text-container {
+            font-family: 'SpecialCharSupportedFont', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="text-container">
+    <h1>
+        일반 텍스트와 특수문자 테스트
+    </h1>
+    <h3>일반 텍스트</h3> <br>
+    <h3 class="special-char" data-fallback="(오전)">㈝</h3>
+</div>
+
+
+<script>
+    // 폰트 지원 확인
+    function getFallbackChar(fontFamily) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = `16px ${fontFamily}`;
+
+        // 지원하지 않는 유니코드 문자 사용
+        const unsupportedUnicode = String.fromCodePoint(0x10FFFF);
+
+        // 해당 폰트/시스템에서 실제로 어떤 문자로 대체되는지 너비 확인
+        const fallbackWidth = ctx.measureText(unsupportedUnicode).width;
+
+        // 일반적인 대체 문자들과 비교
+        const possibleFallbacks = ['□', '�', '?', '▯'];
+
+        // 실제 사용되는 대체 문자 찾기
+        const actualFallback = possibleFallbacks.find(char =>
+            ctx.measureText(char).width === fallbackWidth
+        );
+
+        return {
+            fallbackChar: actualFallback || unsupportedUnicode,
+            fallbackWidth: fallbackWidth
+        };
+    }
+
+    function checkFontSupport(char, fontFamily) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = `16px ${fontFamily}`;
+
+        // 실제 사용되는 대체 문자 정보 가져오기
+        const { fallbackWidth } = getFallbackChar(fontFamily);
+
+        // 테스트하려는 문자의 너비
+        const testWidth = ctx.measureText(char).width;
+
+        return testWidth !== fallbackWidth;
+    }
+
+    // 폰트 로딩 완료 후 지원 확인
+    document.fonts.ready.then(() => {
+        const container = document.querySelector('.text-container');
+        const fontFamily = getComputedStyle(container).fontFamily;
+        const fonts = fontFamily.split(',').map(font => font.trim());
+        const specialChars = container.querySelectorAll('.special-char');
+        // 폰트별로 특수문자 지원 확인, 모든 폰트가 지원하지 않을시 fallback 폰트로 대체
+        specialChars.forEach(char => {
+            const isSupported = fonts.some(font => {
+                const result = checkFontSupport(char.textContent, font)
+                console.log({
+                    '폰트': font,
+                    '문자': char.textContent,
+                    '지원여부': result
+                });
+
+                return result;
+            });
+            if (!isSupported) {
+                char.textContent = char.dataset.fallback;
+            }
+        });
+    });
+</script>
+</body>
+</html>
